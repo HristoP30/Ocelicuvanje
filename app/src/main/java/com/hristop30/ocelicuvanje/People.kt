@@ -15,12 +15,33 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.room.Dao
+import androidx.room.Entity
+import androidx.room.Insert
+import androidx.room.PrimaryKey
+import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
+@Entity(tableName = "people")
 data class Person(
-    val name: String
+    val name: String,
+    @PrimaryKey(autoGenerate = true) val id: Int = 0
 )
+
+@Dao
+interface PersonDao {
+    @Query("SELECT * FROM people ORDER BY id")
+    fun getAll(): Flow<List<Person>>
+
+    @Insert
+    suspend fun insert(person: Person)
+}
 
 @Composable
 fun PeopleScreen(
@@ -28,7 +49,7 @@ fun PeopleScreen(
     onAdd: (String) -> Unit,
     onSelect: (Person) -> Unit
 ) {
-    var name = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -46,17 +67,17 @@ fun PeopleScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             OutlinedTextField(
-                value = name.value,
-                onValueChange = { name.value = it },
+                value = name,
+                onValueChange = { name = it },
                 modifier = Modifier.weight(1f),
                 label = { Text("Name") }
             )
 
             Button(
                 onClick = {
-                    if (name.value.isNotBlank()) {
-                        onAdd(name.value.trim())
-                        name.value = ""
+                    if (name.isNotBlank()) {
+                        onAdd(name.trim())
+                        name = ""
                     }
                 }
             ) {

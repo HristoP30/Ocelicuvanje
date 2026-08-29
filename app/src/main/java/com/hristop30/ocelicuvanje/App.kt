@@ -8,42 +8,46 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.room.Room
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val db = Room.databaseBuilder(applicationContext, AppDatabase::class.java, "ocelicuvanje.db")
+            .build()
+
         setContent {
             AppTheme {
-                AppScreen()
+                AppScreen(db)
             }
         }
     }
 }
 
 @Composable
-fun AppScreen() {
-    val people = remember {
-        mutableStateListOf(
-            Person("Person 1"),
-            Person("Person 2")
-        )
-    }
+fun AppScreen(db: AppDatabase) {
+    val people by db.personDao().getAll().collectAsState(initial = emptyList())
+    var selectedPerson by remember { mutableStateOf<Person?>(null) }
+    val scope = rememberCoroutineScope()
 
-    var selected = remember { androidx.compose.runtime.mutableStateOf<Person?>(null) }
-
-    if (selected.value == null) {
+    if (selectedPerson == null) {
         PeopleScreen(
             people = people,
             onAdd = { name ->
-                people.add(Person(name))
+                scope.launch { db.personDao().insert(Person(name = name)) }
             },
             onSelect = { person ->
-                selected.value = person
+                selectedPerson = person
             }
         )
     } else {
@@ -52,7 +56,7 @@ fun AppScreen() {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Plan goes here: ${selected.value!!.name}",
+                text = "Plan",
                 style = MaterialTheme.typography.headlineSmall
             )
         }

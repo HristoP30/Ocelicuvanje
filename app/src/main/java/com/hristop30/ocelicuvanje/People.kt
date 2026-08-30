@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -36,7 +37,7 @@ data class Person(
 
 @Dao
 interface PersonDao {
-    @Query("SELECT * FROM people ORDER BY id")
+    @Query("SELECT * FROM people ORDER BY name")
     fun getAll(): Flow<List<Person>>
 
     @Insert
@@ -75,8 +76,9 @@ fun PeopleScreen(
 
             Button(
                 onClick = {
-                    if (name.isNotBlank()) {
-                        onAdd(name.trim())
+                    val cleanName = name.trim()
+                    if (cleanName.isNotEmpty()) {
+                        onAdd(cleanName)
                         name = ""
                     }
                 }
@@ -85,9 +87,7 @@ fun PeopleScreen(
             }
         }
 
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(people) { person ->
                 Card(
                     modifier = Modifier
